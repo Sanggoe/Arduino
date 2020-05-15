@@ -1,6 +1,6 @@
 #include <Servo.h>
 
-int motor_control = 8;
+int motor_control = A3;
 Servo servo;
 
 void setup()
@@ -11,17 +11,25 @@ void setup()
 
 void loop()
 {
-  int i;
-  
-  for(i=0; i<=180; i+=1)
+  servo.write(0);
+
+  delay(3000);
+
+  //servo.write(160);
+
+  delay(3000);
+  /*  int i;
+
+  for (i = 0; i <= 180; i += 1)
   {
     servo.write(i);
     delay(10);
   }
-  
-  for(i=180; i>=0; i-=1)
+
+  for (i = 180; i >= 0; i -= 1)
   {
     servo.write(i);
     delay(10);
   }
+  */
 }

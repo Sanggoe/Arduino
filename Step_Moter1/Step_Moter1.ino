@@ -12,15 +12,16 @@ void loop()
 {
   int i;
   
-  for(i=0;i<200;i++)
+  for(i=0;i<50;i++)
   {
   myStepper.step(1);
-  delay(10);
+  delay(60);
   }  
-  
-  for(i=0;i<200;i++)
+  delay(1000);
+  for(i=0;i<50;i++)
   {
   myStepper.step(-1);
-  delay(10);
+  delay(60);
   }  
+  delay(1000);
 }
