@@ -1,34 +1,3 @@
-
-
-// keypad 관련 선언
-#include <Keypad.h>
-const byte numRows = 4;
-const byte numCols = 3;
-char keymap[numRows][numCols] =
-{
-  {'1', '2', '3'},
-  {'4', '5', '6'},
-  {'7', '8', '9'},
-  {'*', '0', '#'}
-};
-byte rowPins[numRows] = {8, 7, 6, 5}; ////// PIN NUMBER //////
-byte colPins[numCols] = {4, 3, 2}; ////// PIN NUMBER //////
-Keypad myKeypad = Keypad(makeKeymap(keymap), rowPins, colPins, numRows, numCols);
-
-
-// bluetooth 관련 선언
-#include <SoftwareSerial.h>
-int bluetooth_Tx = 9; ////// PIN NUMBER //////
-int bluetooth_Rx = 10; ////// PIN NUMBER //////
-SoftwareSerial bluetooth(bluetooth_Tx, bluetooth_Rx);
-
-
-// Servo 모터 관련 선언
-#include <Servo.h>
-int motor_control = 11; ////// PIN NUMBER //////
-Servo servo;
-
-
 // buzzer 음계 관련 선언
 #define NOTE_C 2093
 #define NOTE_D 2349
@@ -46,7 +15,7 @@ Servo servo;
 
 #define NOTE_B2 7902
 #define NOTE_C3 8000
-#define buzzerPin 12 ////// PIN NUMBER //////
+#define buzzerPin 3
 int melody1[] = { // Door's Unlocked 도-미-솔
   NOTE_C, NOTE_E, NOTE_G
 };
@@ -76,85 +45,74 @@ int tempo4[] = { // 열두 박자 템포
   18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18
 };
 
-void setup()
-{
-  // serial 모니터
+// Servo 모터 관련 선언
+#include <Servo.h>
+int motor_control = 4;
+Servo servo; 
+
+// Ultrasonic Sensor 관련 선언
+#define trigPin 5 
+#define echoPin 6
+int num = 0;
+
+
+
+void setup() {
+  // Serial 모니터
   Serial.begin(9600);
 
-  // bluetooth 수신
-  bluetooth.begin(9600);
+  // Buzzer 출력
+  pinMode(buzzerPin, OUTPUT);
 
   // Servo 모터 출력
   servo.attach(motor_control);
 
-  // Buzzer 출력
-  pinMode(buzzerPin, OUTPUT);
+  // Ultrasonic 거리 측정
+  pinMode(trigPin, OUTPUT); 
+  pinMode(echoPin, INPUT);
 }
 
-// password 입력 관련 선언
-char password[] = {'1', '2', '3', '4'}; // password 설정
-char input_status = 0; // keypad input 받는 상태 여부
-char bluetooth_status = 0; // bluetooth input 받는 상태 여부
-int input_count = 0; // password 누른 횟수
-int input_right = 0; // password 일치 횟수
+void loop() {
+  // Ultrasonic 측정
+  digitalWrite(trigPin, LOW);
+  digitalWrite(echoPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  unsigned long duration = pulseIn(echoPin, HIGH);
+  float distance = duration / 29.0 / 2.0;
+  Serial.print(distance);
+  Serial.println("cm");
 
-void loop()
-{
-  char key_pressed = myKeypad.getKey();
-  char phone_pressed = (char)bluetooth.read();
-
-  if (key_pressed == '#' || phone_pressed == '#') {
-    Serial.print("# Input Password : ");
-    input_status = 1;
-    while (input_status) {
-      key_pressed = myKeypad.getKey();
-      if (bluetooth.available()) {
-        phone_pressed = (char)bluetooth.read();
-        bluetooth_status = 1;
-      }
-
-      // when input something
-      if (key_pressed != NO_KEY || bluetooth_status) {
-        bluetooth_status = 0;
-        // if input '#' or count 4, finish input
-        if (key_pressed == '#' || phone_pressed == '#' || input_count == 4 ) {
-          if (input_count != 0 && input_count == input_right) {
-            Serial.println("\nPassword Collect!");
-            servo.write(90); // 잠금 해제
-            melody(1);
-          } else {
-            Serial.println("\nPassword Wrong!");
-            servo.write(180); // 임시로 잠금을 여기에 넣었음
-            melody(2);
-          }
-          input_status = 0;
-          input_count = 0;
-          input_right = 0;
-        } else if (key_pressed == password[input_count] || phone_pressed == password[input_count]) {
-          input_count++;
-          input_right++;
-          Serial.print("key_pressed : ");
-          Serial.print(key_pressed);
-          Serial.print("  phone_pressed : ");
-          Serial.println(phone_pressed);
-        } else {
-          input_count++;
-          Serial.print("key_pressed : ");
-          Serial.print(key_pressed);
-          Serial.print("  phone_pressed : ");
-          Serial.println(phone_pressed);
-        }
-      }
-    }
+  
+  if (distance < 3) {
+    melody(3); // close
+    delay(1000);
+    servo.write(180); // lock
+    melody(1); // lock
+    delay(1000);
+  } else if (distance < 20) {
+    servo.write(90); // unlock
+    melody(2); // unlock
+    delay(1000);
+  } else {
+    melody(4);
+    delay(1000);
+    melody(5);
+    melody(5);
+    melody(5);
+    melody(5);
+    delay(1000);
   }
 }
-
+int situation = 0;
 
 // select melody
 void melody(int s) {
   int size = 0;
-  int situation = s;
-  switch (situation) {
+  situation = s;
+  switch(situation) {
     case 1:
       size = sizeof(melody1) / sizeof(int);
       Serial.println("melody1, 'Unlocked melody'");
@@ -222,7 +180,6 @@ void melody(int s) {
       break;
   }
 }
-
 
 // play melody by buzzer
 void buzz(int targetPin, long frequency, long length) {

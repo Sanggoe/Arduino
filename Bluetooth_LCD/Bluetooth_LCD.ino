@@ -1,7 +1,7 @@
 #include <SoftwareSerial.h>
 #include <string.h>
-int bluetooth_Tx = 2;
-int bluetooth_Rx = 3;
+int bluetooth_Tx = 9;
+int bluetooth_Rx = 10;
 SoftwareSerial bluetooth(bluetooth_Tx, bluetooth_Rx);
 
 int count=0;
