@@ -97,7 +97,7 @@ void loop() {
     melody(2); // unlock
     delay(1000);
   } else {
-    melody(4);
+    melody(4);`
     delay(1000);
     melody(5);
     melody(5);
