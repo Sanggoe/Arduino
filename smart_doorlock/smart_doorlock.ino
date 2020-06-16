@@ -31,6 +31,7 @@ Servo servo;
 // led 관련 선언
 int LED_red = A5;
 int LED_green = A4;
+int LED_white = A1;
 
 
 // buzzer 음계 관련 선언
@@ -86,10 +87,17 @@ int melody6[] =  { // ready to input 라-파
 int tempo5[] = { // 2개
   12, 12
 };
-int melody7[] = { // input butten 미
+int melody7[] = { // someone appeared in front of the door
+  NOTE_C, NOTE_D, NOTE_E, NOTE_F, NOTE_F, NOTE_G, NOTE_G,
+  NOTE_E, NOTE_G, NOTE_F, NOTE_E, NOTE_F, NOTE_D, NOTE_E
+};
+int tempo6[] = { // 14개
+  12, 12, 4, 12, 4, 12, 3, 6, 7, 4, 12, 7, 7, 3
+};
+int melody8[] = { // input butten 미
   NOTE_A
 };
-int tempo6[] = { // 1개
+int tempo7[] = { // 1개
   12
 };
 
@@ -108,10 +116,20 @@ int input_right = 0; // password 일치 횟수
 int password_count = 0; // password 틀린 횟수
 
 
+// LCD 출력 관련 선언
+char inputPassword[5];
+char str[40];
+
+
 // doorlock 관련 선언
 char lock_status = 1;
 char open_status_available = 0;
 int close_count = 0;
+
+
+// IR sensor 관련 선언
+int motion = 13; ////// PIN NUMBER //////
+
 
 void setup()
 {
@@ -131,12 +149,16 @@ void setup()
   // LED 출력
   pinMode(LED_red, OUTPUT);
   pinMode(LED_green, OUTPUT);
+  pinMode(LED_white, OUTPUT);
   digitalWrite(LED_red, HIGH);
   digitalWrite(LED_green, LOW);
 
   // Ultrasonic 거리 측정
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
+
+  // IR sensor
+  pinMode(motion, INPUT);
 }
 
 
@@ -147,8 +169,26 @@ void loop()
     char key_pressed = myKeypad.getKey();
     char phone_pressed = (char)bluetooth.read();
 
+    // LCD output
+    Serial.print("$CLEAR\r\n");
+
+    // IR sensor 측정
+    int sensor = digitalRead(motion);
+    if (sensor == HIGH) {
+      digitalWrite(LED_white, HIGH);
+      melody(6);
+      digitalWrite(LED_white, LOW);
+    }
+
     if (key_pressed == '#' || phone_pressed == '#') {
-      Serial.print("# Input Password : ");
+
+      // LCD output
+      Serial.print("$CLEAR\r\n");
+      Serial.print("$GO 1 1\r\n");
+      Serial.print("$PRINT INPUT PASSWORD : \r\n");
+      Serial.print("$GO 2 1\r\n");
+      Serial.print("$PRINT \r\n");
+
       input_status = 1;
       melody(6);
       while (input_status) {
@@ -164,12 +204,17 @@ void loop()
           // if input '#' or count 4, finish input
           if (key_pressed == '#' || phone_pressed == '#' || input_count == 4 ) {
             if (input_count == 4 && input_count == input_right) {
-              Serial.println("\nPassword Collect!");
               setUnlocked();
               lock_status = 0;
               password_count = 0;
             } else {
-              Serial.println("\nPassword Wrong!");
+              // LCD output
+              Serial.print("$CLEAR\r\n");
+              Serial.print("$GO 1 1\r\n");
+              Serial.print("$PRINT WRONG PASSWORD\r\n");
+              Serial.print("$GO 2 1\r\n");
+              Serial.print("$PRINT TRY AGAIN\r\n");
+
               melody(4);
               delay(1000);
               password_count++;
@@ -177,7 +222,18 @@ void loop()
 
             // if password wrong more than 3 times
             if (password_count == 3) {
-              for (int i = 0; i < 12; i++) {
+              for (int i = 0; i < 13; i++) {
+                // LCD output
+                if (i%2) {
+                  Serial.print("$CLEAR\r\n");
+                  Serial.print("$GO 1 1\r\n");
+                  Serial.print("$PRINT WARNNING!!\r\n");
+                  Serial.print("$GO 2 1\r\n");
+                  Serial.print("$PRINT YOU WRONG 3 TIMES\r\n");
+                } else {
+                  Serial.print("$CLEAR\r\n");
+                }
+
                 digitalWrite(LED_red, LOW);
                 melody(5);
                 digitalWrite(LED_red, HIGH);
@@ -190,20 +246,35 @@ void loop()
             input_count = 0;
             input_right = 0;
           } else if (key_pressed == password[input_count] || phone_pressed == password[input_count]) {
-            melody(7);
+            // LCD output
+            inputPassword[input_count] = key_pressed;
+            inputPassword[input_count + 1] = '\0';
+            sprintf(str, "$PRINT %s\r\n", inputPassword);
+            Serial.print("$CLEAR\r\n");
+            Serial.print("$GO 1 1\r\n");
+            Serial.print("$PRINT INPUT PASSWORD : \r\n");
+            Serial.print("$GO 2 1\r\n");
+            Serial.print(str);
+            Serial.print("$CURSOR 1 1\r \n");
+
+            melody(8);
             input_count++;
             input_right++;
-            Serial.print("key_pressed : ");
-            Serial.print(key_pressed);
-            Serial.print("  phone_pressed : ");
-            Serial.println(phone_pressed);
+
           } else {
-            melody(7);
+            // LCD output
+            inputPassword[input_count] = key_pressed;
+            inputPassword[input_count + 1] = '\0';
+            sprintf(str, "$PRINT %s\r\n", inputPassword);
+            Serial.print("$CLEAR\r\n");
+            Serial.print("$GO 1 1\r\n");
+            Serial.print("$PRINT INPUT PASSWORD : \r\n");
+            Serial.print("$GO 2 1\r\n");
+            Serial.print(str);
+            Serial.print("$CURSOR 1 1\r \n");
+
+            melody(8);
             input_count++;
-            Serial.print("key_pressed : ");
-            Serial.print(key_pressed);
-            Serial.print("  phone_pressed : ");
-            Serial.println(phone_pressed);
           }
         }
       }
@@ -213,10 +284,16 @@ void loop()
   else {
     delay(500);
     float distance = getDistanceUltrasonicSensor();
+    Serial.print("$CLEAR\r\n");
 
     if (open_status_available == 1) {
       if (close_count == 3) {
+        // LCD output
+        Serial.print("$CLEAR\r\n");
+        Serial.print("$GO 1 1\r\n");
+        Serial.print("$PRINT Closing...\r\n");
         melody(3); // close 알림 melody
+
         if (getDistanceUltrasonicSensor() < 4) {
           close_count = 0;
           lock_status = 1;
@@ -234,7 +311,7 @@ void loop()
         }
       }
     }
-    
+
     else { // after unlocked, still not opened
       if (close_count > 8 || distance > 4) {
         open_status_available = 1;
@@ -249,19 +326,35 @@ void loop()
 
 // change locked
 void setLocked() {
+  // LCD output
+  Serial.print("$CLEAR\r\n");
+  Serial.print("$GO 1 1\r\n");
+  Serial.print("$PRINT DOOR IS LOCKED\r\n");
+  Serial.print("$GO 2 1\r\n");
+  Serial.print("$PRINT SECURE THE HOUSE\r\n");
+
   servo.write(180); // locked
   digitalWrite(LED_red, HIGH);
   digitalWrite(LED_green, LOW);
   melody(2);
+  delay(1000);
 }
 
 
 // change unlocked
 void setUnlocked() {
+  // LCD output
+  Serial.print("$CLEAR\r\n");
+  Serial.print("$GO 1 1\r\n");
+  Serial.print("$PRINT DOOR IS UNLOCKED\r\n");
+  Serial.print("$GO 2 1\r\n");
+  Serial.print("$PRINT WELLCOME HOME\r\n");
+
   servo.write(90); // unlocked
   digitalWrite(LED_red, LOW);
   digitalWrite(LED_green, HIGH);
   melody(1);
+  delay(1000);
 }
 
 
@@ -366,10 +459,23 @@ void melody(int s) {
       }
       break;
     case 7:
-      int noteDuration = 1000 / tempo6[0];
-      Serial.println("melody7, 'input button melody'");
+      size = sizeof(melody7) / sizeof(int);
+      Serial.println("melody7, 'someone appeared in front of the door melody'");
+      for (int thisNote = 0; thisNote < size; thisNote++) {
+        int noteDuration = 1000 / tempo6[thisNote];
+        buzz(buzzerPin, melody7[thisNote], noteDuration);
 
-      buzz(buzzerPin, melody7[0], noteDuration);
+        int pauseBetweenNotes = noteDuration * 1.30;
+        delay(pauseBetweenNotes);
+
+        buzz(buzzerPin, 0, noteDuration);
+      }
+      break;
+    case 8:
+      int noteDuration = 1000 / tempo7[0];
+      Serial.println("melody8, 'input button melody'");
+
+      buzz(buzzerPin, melody8[0], noteDuration);
 
       int pauseBetweenNotes = noteDuration * 1.30;
       delay(pauseBetweenNotes);

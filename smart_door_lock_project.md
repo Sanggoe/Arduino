@@ -134,10 +134,3 @@
      * melody(6) - when someone come or something has been delivered melody
   2. if **detected_status** is false
      * nothing to do
-
-
-
-// status values
-int lock_status;
-int open_status;
-int input_status
