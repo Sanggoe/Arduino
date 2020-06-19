@@ -20,6 +20,11 @@
 
      <br/>
 
+     * if **interrupt** occur
+       * set lock_status 
+
+     <br/>
+
      * Check the **input_status** is **available**
 
        1. if **input_status** is **available**
@@ -37,7 +42,7 @@
 
                * Turn off the Red LED
                * Turn on the Green LED
-               * Servo motor write (90) - change **lock_status** to unlocked
+               * Servo motor write (90) - set **lock_status** to unlocked
                * melody (1) - when the door is unlocked melody
 
             2. if **password** is **wrong**
@@ -81,7 +86,7 @@
 
                * Turn off the Red LED
                * Turn on the Green LED
-               * Servo motor write (90) - change **lock_status** to unlocked
+               * Servo motor write (90) - set **lock_status** to unlocked
                * melody (1) - when the door is unlocked melody
 
             2. if **password** is **wrong**
@@ -119,7 +124,7 @@
           * melody (3) - when the door is closed melody
           * Turn off the Green LED
           * Turn on the Red LED
-          * Servo motor write (180) - change **lock_status** to locked
+          * Servo motor write (180) - set **lock_status** to locked
           * melody (2) - when the door is locked melody
 
        2. if **open_status** is opened

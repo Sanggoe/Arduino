@@ -129,6 +129,15 @@ int close_count = 0;
 
 // IR sensor 관련 선언
 int motion = 13; ////// PIN NUMBER //////
+int test = 2;
+
+
+// interrupt 관련 선언
+int button = A0;
+volatile int interrupt = LOW;
+volatile int state = LOW;
+volatile unsigned long current_high;
+volatile unsigned long current_low;
 
 
 void setup()
@@ -159,6 +168,10 @@ void setup()
 
   // IR sensor
   pinMode(motion, INPUT);
+
+  // interrupt
+  pinMode(button, INPUT);
+  attachInterrupt(0, read_button, CHANGE);
 }
 
 
@@ -172,13 +185,18 @@ void loop()
     // LCD output
     Serial.print("$CLEAR\r\n");
 
-    // IR sensor 측정
-    int sensor = digitalRead(motion);
-    if (sensor == HIGH) {
-      digitalWrite(LED_white, HIGH);
-      melody(6);
-      digitalWrite(LED_white, LOW);
+    // button interrupt
+    if (interrupt) {
+      interrupt = 0;
+      setUnlocked();
     }
+
+    /*    // IR sensor 측정
+        int sensor = digitalRead(motion);
+        if (sensor == HIGH) {
+
+        }
+    */
 
     if (key_pressed == '#' || phone_pressed == '#') {
 
@@ -224,7 +242,7 @@ void loop()
             if (password_count == 3) {
               for (int i = 0; i < 13; i++) {
                 // LCD output
-                if (i%2) {
+                if (i % 2) {
                   Serial.print("$CLEAR\r\n");
                   Serial.print("$GO 1 1\r\n");
                   Serial.print("$PRINT WARNNING!!\r\n");
@@ -282,6 +300,12 @@ void loop()
   }
   // if door is unlocked
   else {
+
+    if (interrupt) {
+      interrupt = 0;
+      setLocked();
+    }
+
     delay(500);
     float distance = getDistanceUltrasonicSensor();
     Serial.print("$CLEAR\r\n");
@@ -323,9 +347,33 @@ void loop()
   }
 }
 
+// button interrupt
+void read_button() {
+
+  if (digitalRead(button) == HIGH) {
+    current_high = millis();
+    state = HIGH;
+  }
+
+  if (digitalRead(button) == LOW && state == HIGH) {
+    current_low = millis();
+
+    if ((current_low - current_high) > 0 && (current_low - current_high) < 3000) {
+      if (lock_status) {
+        lock_status = 0;
+      } else {
+        lock_status = 1;
+      }
+      Serial.println("인터럽트!! 열려라 참깨!!");
+      interrupt = 1;
+      state = LOW;
+    }
+  }
+}
 
 // change locked
 void setLocked() {
+  ;
   // LCD output
   Serial.print("$CLEAR\r\n");
   Serial.print("$GO 1 1\r\n");
