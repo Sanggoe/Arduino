@@ -1,0 +1,9 @@
+Arduino Uno	: 	  Pin 20
+Bluetooth module	: V 1 : G 1 : P 2
+Ultrasonic sensor	: V 1 : G 1 : P 2 (Digit)
+Infrared sensor	: V 1 : G 1 : P 1 (Digit)
+key pad 4x4 button	:      :	 : P 7 
+Servo Motor	: V 1 : G 1 : P 1 (Digit)
+LCD		: V 1 : G 1 : P 1 (Tx pin)
+piezo buzzer	:      : G 1 : P 1 
+LED		:      : G 2 : P 2
